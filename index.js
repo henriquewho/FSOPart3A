@@ -76,7 +76,7 @@ app.post('/api/persons', (request, response)=>{
         const err = {error: 'Person needs a name'}
         return response.status(400).send(err); 
     } else if (!number || number<1){
-        const err = {error: 'Number must be valid'};
+        const err = {error: `Number must be valid, ${number}`};
         return response.status(400).send(err); 
     }
 
