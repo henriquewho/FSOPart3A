@@ -67,7 +67,7 @@ app.delete('/api/persons/:id', (request, response) => {
 app.post('/api/persons', (request, response)=>{
     console.log(`adding a new person`);
     const data = request.body; 
-    const number = +data.phone || +data.phone; 
+    const number = +data.phone || +data.number; 
 
     if (persons.find(each=>each.name === data.name)){
         const err = {error: 'Name must be unique'}; 
