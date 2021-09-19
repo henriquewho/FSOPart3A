@@ -2,11 +2,11 @@ DELETE http://localhost:3001/api/persons/1
 
 ### 
 
-POST http://localhost:3001/api/persons HTTP/1.1
+POST https://desolate-cliffs-19270.herokuapp.com/api/persons HTTP/1.1
 content-type: application/json
 
 {
-    "name":"kiksr", "number": 9999
+    "name":"kiksr", "number": 81818181
 }
 
 ###
