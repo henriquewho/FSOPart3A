@@ -1,9 +1,11 @@
 // require express and put it on 'app'
-const { application, request, response } = require('express');
+require('dotenv').config(); 
 const express = require('express')
 let morgan = require('morgan'); 
 const cors = require('cors'); 
 const app = express(); 
+
+const Person = require('./models/person')
 
 app.use(cors()); 
 app.use(express.json())
@@ -29,40 +31,28 @@ const genId = () =>{
     return newId; 
 }
 
-// routes 
+// routes db
 app.get('/api/persons', (request, response)=>{
     console.log('request for all persons');
-    response.json(persons); 
+    Person.find({}).then(result=>{
+        response.json(result); 
+    })
 })
 
 app.get('/api/persons/:id', (request, response)=>{
-    const id = +request.params.id; 
-    const person = persons.find(each => each.id === id); 
-
-    if (person){
-        console.log('person found', person);
-        response.json(person);
-    } else {
-        console.log('person not found, return 404')
-        response.status(404).end(); 
-    }
+    Person.findById(request.params.id).then(result=>{
+        console.log(`Found the person with id ${request.params.id}`);
+        response.json(result); 
+    })
 })
 
 app.get('/info', (request, response)=>{
-    const now = new Date(); 
-    const string = `<p>Phonebook has info for ${persons.length} people</p>
-    <p>${now}</p>`; 
-    response.send(string); 
-})
-
-app.delete('/api/persons/:id', (request, response) => {
-    const id = +request.params.id;
-    if (persons.find(each=>each.id===id)){
-        persons = persons.filter(each=>each.id!==id); 
-        response.status(200).end(); 
-    } else {
-        response.status(404).end(); 
-    }
+    Person.find({}).then(result=>{
+        const now = new Date(); 
+        const string = `<p>Phonebook has info for ${result.length} people</p>
+        <p>${now}</p>`; 
+        response.send(string); 
+    })
 })
 
 app.post('/api/persons', (request, response)=>{
@@ -81,13 +71,25 @@ app.post('/api/persons', (request, response)=>{
         return response.status(400).send(err); 
     }
 
-    const newPerson = {
+    const newPerson = Person({
         name: data.name, 
-        number: data.number, 
-        id: genId()
+        number: number
+    })
+    newPerson.save().then(result =>{
+        console.log(`${newPerson.name} was added to the db`);
+        response.json(result);
+    })
+})
+
+// older routes
+app.delete('/api/persons/:id', (request, response) => {
+    const id = +request.params.id;
+    if (persons.find(each=>each.id===id)){
+        persons = persons.filter(each=>each.id!==id); 
+        response.status(200).end(); 
+    } else {
+        response.status(404).end(); 
     }
-    persons = persons.concat(newPerson); 
-    response.json(newPerson); 
 })
 
 const unknownEndpoint = (request, response) => {
