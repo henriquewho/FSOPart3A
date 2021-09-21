@@ -17,12 +17,6 @@ morgan.token('data', request => {
 })
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :data')); 
 
-// 'database '
-let persons = [
-    { id: 1, name: 'john doe', number: 12345 },
-    { id: 2, name: 'janne doe', number: 54321 },
-]
-
 const genId = () =>{
     let newId = Math.floor(Math.random()*1000); 
     while (persons.find(each=>each.id === newId)){
@@ -31,34 +25,37 @@ const genId = () =>{
     return newId; 
 }
 
-// routes db
-app.get('/api/persons', (request, response)=>{
+// routes
+app.get('/api/persons', (request, response, next)=>{
     console.log('request for all persons');
     Person.find({}).then(result=>{
         response.json(result); 
     })
-    .catch (err => errorHandler(err)); 
+    .catch (err => next(err)); 
 })
 
-app.get('/api/persons/:id', (request, response)=>{
-    Person.findById(request.params.id).then(result=>{
+app.get('/api/persons/:id', (request, response, next)=>{
+    Person.findById(request.params.id)
+    .then(result=>{
         console.log(`Found the person with id ${request.params.id}`);
         response.json(result); 
     })
-    .catch (err => errorHandler(err)); 
+    .catch (error =>{
+        next(error); 
+    })
 })
 
-app.get('/info', (request, response)=>{
+app.get('/info', (request, response, next)=>{
     Person.find({}).then(result=>{
         const now = new Date(); 
         const string = `<p>Phonebook has info for ${result.length} people</p>
         <p>${now}</p>`; 
         response.send(string); 
     })
-    .catch (err => errorHandler(err));
+    .catch (err => next(err));
 })
 
-app.post('/api/persons', (request, response)=>{
+app.post('/api/persons', (request, response, next)=>{
     console.log(`adding a new person`);
     const data = request.body; 
     const number = +data.phone || +data.number; 
@@ -82,10 +79,10 @@ app.post('/api/persons', (request, response)=>{
         console.log(`${newPerson.name} was added to the db`);
         response.json(result);
     })
-    .catch (err => errorHandler(err)); 
+    .catch (err => next(err)); 
 })
 
-app.delete('/api/persons/:id', (request, response) => {
+app.delete('/api/persons/:id', (request, response, next) => {
     console.log(`Delete person with id: `, request.params.id);
     Person.findByIdAndRemove(request.params.id)
     .then(resp =>{
@@ -93,11 +90,11 @@ app.delete('/api/persons/:id', (request, response) => {
     })
     .catch(err =>{
         console.log(err);
-        errorHandler(err); 
+        next(err); 
     })
 })
 
-app.put('/api/persons/:id', (request, response) =>{
+app.put('/api/persons/:id', (request, response, next) =>{
     const id = request.params.id; 
     const data = request.body; 
 
@@ -109,7 +106,7 @@ app.put('/api/persons/:id', (request, response) =>{
     .then( result =>{
         response.json(result); 
     })
-    .catch(err => errorHandler(err)); 
+    .catch(err => next(err)); 
 })
 
 const unknownEndpoint = (request, response) => {
@@ -118,12 +115,17 @@ const unknownEndpoint = (request, response) => {
 app.use(unknownEndpoint)
 
 const errorHandler = (error, request, response, next) => {
-    console.log(error.message);
-    if (error.name === 'CastError'){
-        return response.status(400).send({ error: 'malformatted id' })
-    }
-    next(error); 
-}
+    console.error(error.message)
+  
+    if (error.name === 'CastError') {
+      return response.status(400).send({ error: 'malformatted id' })
+    } 
+  
+    next(error)
+  }
+  
+// this has to be the last loaded middleware.
+app.use(errorHandler)
 
 // define port and tell app to listen at it
 const PORT = process.env.PORT || 3001; 
