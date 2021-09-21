@@ -37,6 +37,7 @@ app.get('/api/persons', (request, response)=>{
     Person.find({}).then(result=>{
         response.json(result); 
     })
+    .catch (err => errorHandler(err)); 
 })
 
 app.get('/api/persons/:id', (request, response)=>{
@@ -44,6 +45,7 @@ app.get('/api/persons/:id', (request, response)=>{
         console.log(`Found the person with id ${request.params.id}`);
         response.json(result); 
     })
+    .catch (err => errorHandler(err)); 
 })
 
 app.get('/info', (request, response)=>{
@@ -53,6 +55,7 @@ app.get('/info', (request, response)=>{
         <p>${now}</p>`; 
         response.send(string); 
     })
+    .catch (err => errorHandler(err));
 })
 
 app.post('/api/persons', (request, response)=>{
@@ -79,23 +82,48 @@ app.post('/api/persons', (request, response)=>{
         console.log(`${newPerson.name} was added to the db`);
         response.json(result);
     })
+    .catch (err => errorHandler(err)); 
 })
 
-// older routes
 app.delete('/api/persons/:id', (request, response) => {
-    const id = +request.params.id;
-    if (persons.find(each=>each.id===id)){
-        persons = persons.filter(each=>each.id!==id); 
-        response.status(200).end(); 
-    } else {
-        response.status(404).end(); 
+    console.log(`Delete person with id: `, request.params.id);
+    Person.findByIdAndRemove(request.params.id)
+    .then(resp =>{
+        response.status(204).end(); 
+    })
+    .catch(err =>{
+        console.log(err);
+        errorHandler(err); 
+    })
+})
+
+app.put('/api/persons/:id', (request, response) =>{
+    const id = request.params.id; 
+    const data = request.body; 
+
+    const person = {
+        name: data.name, number: data.number
     }
+
+    Person.findByIdAndUpdate(id, person, {new:true})
+    .then( result =>{
+        response.json(result); 
+    })
+    .catch(err => errorHandler(err)); 
 })
 
 const unknownEndpoint = (request, response) => {
     response.status(404).send({ error: 'unknown endpoint' })
 }
 app.use(unknownEndpoint)
+
+const errorHandler = (error, request, response, next) => {
+    console.log(error.message);
+    if (error.name === 'CastError'){
+        return response.status(400).send({ error: 'malformatted id' })
+    }
+    next(error); 
+}
 
 // define port and tell app to listen at it
 const PORT = process.env.PORT || 3001; 
