@@ -9,7 +9,6 @@ const Person = require('./models/person')
 
 app.use(cors()); 
 app.use(express.json())
-//app.use(morgan('tiny'))
 app.use(express.static('build')); 
 
 morgan.token('data', request => {
@@ -60,10 +59,7 @@ app.post('/api/persons', (request, response, next)=>{
     const data = request.body; 
     const number = +data.phone || +data.number; 
 
-    if (persons.find(each=>each.name === data.name)){
-        const err = {error: 'Name must be unique'}; 
-        return response.status(400).send(err); 
-    } else if (data.name=="" || !data.name){
+    if (data.name=="" || !data.name){
         const err = {error: 'Person needs a name'}
         return response.status(400).send(err); 
     } else if (!number || number<1){
@@ -71,15 +67,22 @@ app.post('/api/persons', (request, response, next)=>{
         return response.status(400).send(err); 
     }
 
-    const newPerson = Person({
-        name: data.name, 
-        number: number
+    Person.find({})
+    .then(results => {
+        if(results.find(each => each.name === data.name)){
+            const err = {error: 'Name must be unique'}; 
+            return response.status(400).send(err); 
+        }
+        const newPerson = Person({
+            name: data.name, 
+            number: number
+        })
+        newPerson.save().then(result =>{
+            console.log(`${newPerson.name} was added to the db`);
+            response.json(result);
+        })
+        .catch (err => next(err)); 
     })
-    newPerson.save().then(result =>{
-        console.log(`${newPerson.name} was added to the db`);
-        response.json(result);
-    })
-    .catch (err => next(err)); 
 })
 
 app.delete('/api/persons/:id', (request, response, next) => {
@@ -109,6 +112,7 @@ app.put('/api/persons/:id', (request, response, next) =>{
     .catch(err => next(err)); 
 })
 
+// error middlewares
 const unknownEndpoint = (request, response) => {
     response.status(404).send({ error: 'unknown endpoint' })
 }
